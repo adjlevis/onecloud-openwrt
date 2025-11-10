@@ -7,7 +7,7 @@ on:
       OP_IP:
         description: '静态IP地址'
         required: false
-        default: '192.168.1.1'
+        default: '192.168.2.2'
         type: string
 
       ENABLE_DHCP:
@@ -25,7 +25,7 @@ on:
       OP_author:
         description: '定制作者'
         required: false
-        default: 'official'
+        default: 'djkyc'
         type: string
 
 env:
@@ -64,7 +64,8 @@ jobs:
         sudo timedatectl set-timezone 'Asia/Shanghai'
         git config --global user.name 'GitHub Actions'
         git config --global user.email 'noreply@github.com'
-        mkdir -p /workdir && sudo chown $USER:$GROUPS /workdir
+        mkdir -p $GITHUB_WORKSPACE/workdir
+        sudo chown -R $USER:$GROUPS $GITHUB_WORKSPACE/workdir
 
     - name: 设置环境变量
       run: |
@@ -78,10 +79,10 @@ jobs:
         echo "OP_author=${{ github.event.inputs.OP_author }}" >> $GITHUB_ENV
 
     - name: 克隆官方源码
-      working-directory: /workdir
+      working-directory: ${{ github.workspace }}/workdir
       run: |
         git clone $REPO_URL -b $REPO_BRANCH openwrt
-        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        ln -sf $GITHUB_WORKSPACE/workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: 获取最新标签（官方 release）
       working-directory: ./openwrt
@@ -103,6 +104,12 @@ jobs:
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+
+    - name: 加载自定义脚本
+      run: |
+        chmod +x $DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
 
     - name: 添加配置文件
       run: |
